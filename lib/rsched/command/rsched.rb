@@ -165,6 +165,8 @@ class Engine
 
         s.sched(now)
         s.queue.delete_if {|time|
+          next if @finished
+
           x = @lock.aquire(ident, time)
           case x
           when nil
@@ -190,7 +192,10 @@ class Engine
           end
         }
 
+        break if @finished
       }
+
+      return if @finished
 
       unless one
         cond_wait(@interval)
