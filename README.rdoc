@@ -1,0 +1,93 @@
+= rsched
+
+A Generic Reliable Scheduler. It's like cron, but rsched supports redundancy using multiple servers.
+
+
+== Architecture
+
+1. rsched virtually locks a record on a RDBMS.
+2. if the schedule is not finished and not locked by other node, run it.
+3. if it succeeded, mark it finished.
+4. if it failed, unlock it and expect to be retried.
+
+
+== Install
+
+  $ gem install rsched
+  $ gem install dbd-mysql    # to use MySQL as a lock database
+  $ gem install dbd-sqlite3  # to use SQLite3 as a lock database
+
+
+== Schedule
+
+A schedule consists of ident, time and action. Ident describes unique identifier of the schedule that. Time describes when it should be scheduled. Action is an description of the schedule.
+
+Format of the time is same as cron. See `man 5 cron` for details.
+
+_Example:_
+
+  # Run every minutes
+  $ rsched -a 'mysched * * * * * my descriptoin of this action' ...
+
+  # Run every day at 00:00
+  $ rsched -a 'mywork 0 0 * * * aaaa uuu ee' ...
+
+
+== Usage
+
+  Usage: rsched [options] [-- <ARGV-for-exec-or-run>]
+          --configure PATH.yaml        Write configuration file
+          --exec COMMAND               Execute command
+          --run SCRIPT.rb              Run method named 'run' defined in the script
+      -a, --add EXPR                   Add an execution schedule
+      -t, --timeout SEC                Retry timeout (default: 600)
+      -r, --resume SEC                 Limit time to resume tasks (default: 3600)
+      -E, --delete SEC                 Limit time to delete tasks (default: 2592000)
+      -n, --name NAME                  Unique name of this node (default: PID.HOSTNAME)
+      -w, --delay SEC                  Delay time before running a task (default: 0)
+      -F, --from UNIX_TIME_OR_now      Time to start scheduling
+      -i, --interval SEC               Scheduling interval (default: 10)
+      -T, --type TYPE                  Lock database type (default: mysql)
+      -D, --database DB                Database name
+      -H, --host HOST[:PORT]           Database host
+      -u, --user NAME                  Database user name
+      -p, --password PASSWORD          Database password
+      -d, --daemon PIDFILE             Daemonize (default: foreground)
+      -f, --file PATH.yaml             Read configuration file
+
+Lock database (-T) is used to synchronize scheduling status over multiple servers. Rsched supports following database types:
+
+* *mysql* uses MySQL as a lock database. Note that 'dbd-mysql' gem must be installed.
+* *sqlite3* uses SQLite3 as a lock database. Note that 'dbd-sqlite3' gem must be installed.
+
+
+One of --exec, --run or --configure is required. The behavior of the commands is described below:
+
+
+=== exec
+
+Execute a command when an action is scheduled. ident, time and action is passed to the stdin with tab-separated format. The command have to exit with status code 0 when it succeeded.
+
+_Example:_
+
+  #!/usr/bin/env ruby
+  ident, time, action = STDIN.read.split("\t", 3)
+  t = Time.at(time.to_i)
+  puts "scheduled on #{t} ident=#{ident} action=#{action}"
+  
+  # $ rsched -a 'mysched * * * * * des' -T sqlite3 -D test.db -F now --exec ./this_file
+
+
+=== run
+
+This is same as 'exec' except that this calls a method named 'run' defined in the file instead of executing the file. It is assumed it succeeded if the method doesn't any raise errors.
+
+_Example:_
+
+  def run(ident, time, action)
+    t = Time.at(time)
+    puts "scheduled on #{t} ident=#{ident} action=#{action}"
+  end
+  
+  # $ rsched -a 'mysched * * * * * des' -T sqlite3 -D test.db -F now --exec ./this_file.rb
+
