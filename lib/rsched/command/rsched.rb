@@ -1,4 +1,5 @@
 require 'thread'
+require 'time'
 
 module RSched
 
@@ -122,7 +123,6 @@ class Engine
     end
 
     private
-    require 'time'
     if Time.respond_to?(:strptime)
       def create_time_key(t)
         Time.strptime(t.strftime('%Y%m%d%H%M00UTC'), '%Y%m%d%H%M%S%Z').to_i
@@ -330,11 +330,11 @@ op.on('-w', '--delay SEC', 'Delay time before running a task (default: 0)', Inte
   conf[:delay] = i
 }
 
-op.on('-F', '--from UNIX_TIME_OR_now', 'Time to start scheduling') {|s|
+op.on('-F', '--from YYYY-mm-dd_OR_now', 'Time to start scheduling') {|s|
   if s == "now"
     conf[:from] = Time.now.to_i
   else
-    conf[:from] = s.to_i
+    conf[:from] = Time.parse(s).to_i
   end
 }
 
@@ -478,6 +478,9 @@ if schedule.empty?
 end
 
 
+puts "Using node name #{conf[:name]}"
+
+
 if conf[:daemon]
   exit!(0) if fork
   Process.setsid
@@ -500,7 +503,7 @@ schedule.each {|e|
   ident = tabs.shift
   action = tabs.pop
   time = tabs.join(' ')
-  puts "adding schedule ident='#{ident}' time='#{time}' action='#{action}'"
+  puts "Adding schedule ident='#{ident}' time='#{time}' action='#{action}'"
   worker.set_sched(ident, action, time)
 }
 
@@ -524,7 +527,4 @@ else
 end
 
 worker.run(run_proc)
-
-# dbi
-# dbd-sqlite3
 
