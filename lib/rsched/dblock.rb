@@ -32,10 +32,10 @@ class DBLock < Lock
     end
   end
 
-  def release(token, next_timeout=Time.now.to_i)
+  def release(token)
     ident, time = *token
     n = @db.do('UPDATE rsched SET timeout=? WHERE ident = ? AND time = ? AND host = ?;',
-           next_timeout, ident, time, @hostname)
+           0, ident, time, @hostname)
     return n > 0
   end
 
@@ -67,8 +67,8 @@ class DBLock < Lock
   end
 
   def try_update(ident, time, now)
-    n = @db.do('UPDATE rsched SET host=?, timeout=? WHERE ident = ? AND time = ? AND finish IS NULL AND (timeout < ? OR host = ?);',
-            @hostname, now+@timeout, ident, time, now, @hostname)
+    n = @db.do('UPDATE rsched SET host=?, timeout=? WHERE ident = ? AND time = ? AND finish IS NULL AND timeout < ?;',
+            @hostname, now+@timeout, ident, time, now)
     return n > 0
   end
 

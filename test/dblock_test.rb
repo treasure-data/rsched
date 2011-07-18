@@ -34,10 +34,11 @@ class DBLockTest < Test::Unit::TestCase
     token = db2.acquire('ident1', time, now)
     assert_equal false, token
 
-    # same host can relock
-    token = db1.acquire('ident1', time, now)
-    assert_not_equal nil, token
-    assert_not_equal false, token
+    # v0.4.0: same host can't relock
+    ## same host can relock
+    #token = db1.acquire('ident1', time, now)
+    #assert_not_equal nil, token
+    #assert_not_equal false, token
 
     # different identifier
     token = db2.acquire('ident2', time, now)
@@ -63,7 +64,7 @@ class DBLockTest < Test::Unit::TestCase
     assert_not_equal nil, token
     assert_not_equal false, token
 
-    db1.release(token, now-1)
+    db1.release(token)
 
     # released
     token = db2.acquire('ident1', time, now)
