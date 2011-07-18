@@ -55,6 +55,7 @@ class Engine
     @kill_timeout = conf[:kill_timeout]
     @kill_retry = conf[:kill_retry]
     @sched_start = conf[:from] || 0
+    @release_on_fail = conf[:release_on_fail]
     @finished = false
     @ss = {}
 
@@ -150,6 +151,7 @@ class Engine
     success = false
     begin
       @run_proc.call(ident, time, action)
+      puts "finished token=#{token.inspect}"
       success = true
     rescue
       puts "failed token=#{token.inspect} time=#{time}: #{$!}"
@@ -165,7 +167,9 @@ class Engine
       cleanup_old_entries(ident)
       true
     else
-      @lock.release(token)
+      if @release_on_fail
+        @lock.release(token)
+      end
       false
     end
   end

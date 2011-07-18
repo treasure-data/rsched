@@ -17,6 +17,7 @@ defaults = {
   :type => 'mysql',
   :name => "#{Process.pid}.#{`hostname`.strip}",
   :kill_retry => 60,
+  :release_on_fail => false,
 }
 
 conf = { }
@@ -79,6 +80,10 @@ op.on('-X', '--kill-retry SEC', 'Threashold time before retrying killing process
 
 op.on('-i', '--interval SEC', 'Scheduling interval (default: 10)', Integer) {|i|
   conf[:interval] = i
+}
+
+op.on('-E', '--release-on-fail', 'Releases lock if task failed so that other node can retry immediately', TrueClass) {|b|
+  conf[:release_on_fail] = b
 }
 
 op.on('-T', '--type TYPE', 'Lock database type (default: mysql)') {|s|
