@@ -1,0 +1,18 @@
+
+== 2011-07-19 version 0.3.0
+
+* Changed not to release a lock when a task is failed
+* Added -E, --release-on-fail option
+* Added respectable timeout implementation
+
+
+== 2011-07-11 version 0.2.0
+
+* Splits single bin file into multiple files
+* Added test codes
+
+
+== 2011-07-10 version 0.1.0
+
+* Initial release
+

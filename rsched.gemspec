@@ -5,16 +5,17 @@
 
 Gem::Specification.new do |s|
   s.name = %q{rsched}
-  s.version = "0.2.0"
+  s.version = "0.3.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Sadayuki Furuhashi"]
-  s.date = %q{2011-07-12}
+  s.date = %q{2011-07-18}
   s.default_executable = %q{rsched}
   s.email = %q{frsyuki@gmail.com}
   s.executables = ["rsched"]
   s.extra_rdoc_files = [
-    "README.rdoc"
+    "ChangeLog",
+     "README.rdoc"
   ]
   s.files = [
     "bin/rsched",
