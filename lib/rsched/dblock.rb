@@ -4,9 +4,8 @@ module RSched
 
 class DBLock < Lock
   def initialize(hostname, timeout, uri, user, pass)
+    super(hostname, timeout)
     require 'dbi'
-    @hostname = hostname
-    @timeout = timeout
     @db = DBI.connect(uri, user, pass)
     init_db
   end
@@ -33,10 +32,10 @@ class DBLock < Lock
     end
   end
 
-  def release(token)
+  def release(token, next_timeout=Time.now.to_i)
     ident, time = *token
     n = @db.do('UPDATE rsched SET timeout=? WHERE ident = ? AND time = ? AND host = ?;',
-           0, ident, time, @hostname)
+           next_timeout, ident, time, @hostname)
     return n > 0
   end
 
@@ -44,6 +43,13 @@ class DBLock < Lock
     ident, time = *token
     n = @db.do('UPDATE rsched SET finish=? WHERE ident = ? AND time = ? AND host = ?;',
            now, ident, time, @hostname)
+    return n > 0
+  end
+
+  def extend_timeout(token, timeout=Time.now.to_i+@timeout)
+    ident, time = *token
+    n = @db.do('UPDATE rsched SET timeout=? WHERE ident = ? AND time = ? AND host = ?;',
+           timeout, ident, time, @hostname)
     return n > 0
   end
 

@@ -9,13 +9,14 @@ confout = nil
 schedule = []
 
 defaults = {
-  :timeout => 600,
+  :timeout => 30,
   :resume => 3600,
   :delete => 2592000,
   :delay => 0,
   :interval => 10,
   :type => 'mysql',
   :name => "#{Process.pid}.#{`hostname`.strip}",
+  :kill_retry => 60,
 }
 
 conf = { }
@@ -36,7 +37,7 @@ op.on('-a', '--add EXPR', 'Add an execution schedule') {|s|
   schedule << s
 }
 
-op.on('-t', '--timeout SEC', 'Retry timeout (default: 600)', Integer) {|i|
+op.on('-t', '--timeout SEC', 'Retry timeout (default: 30)', Integer) {|i|
   conf[:timeout] = i
 }
 
@@ -64,9 +65,17 @@ op.on('-F', '--from YYYY-mm-dd_OR_now', 'Time to start scheduling') {|s|
   end
 }
 
-#op.on('-x', '--kill-timeout SEC', 'Threashold time before killing process (default: timeout * 5)', Integer) {|i|
-#  conf[:kill_timeout] = i
-#}
+op.on('-e', '--extend-timeout SEC', 'Threashold time before extending visibility timeout (default: timeout * 3/4)', Integer) {|i|
+  conf[:extend_timeout] = i
+}
+
+op.on('-x', '--kill-timeout SEC', 'Threashold time before killing process (default: timeout * 10)', Integer) {|i|
+  conf[:kill_timeout] = i
+}
+
+op.on('-X', '--kill-retry SEC', 'Threashold time before retrying killing process (default: 60)', Integer) {|i|
+  conf[:kill_retry] = i
+}
 
 op.on('-i', '--interval SEC', 'Scheduling interval (default: 10)', Integer) {|i|
   conf[:interval] = i
@@ -177,6 +186,14 @@ begin
     raise "Unknown lock server type '#{conf[:type]}'"
   end
 
+  unless conf[:extend_timeout]
+    conf[:extend_timeout] = conf[:timeout] / 4 * 3
+  end
+
+  unless conf[:kill_timeout]
+    conf[:kill_timeout] = conf[:timeout] * 10
+  end
+
 rescue
   usage $!.to_s
 end
@@ -248,9 +265,16 @@ end
 if type == :run
   load File.expand_path(conf[:run])
   run_proc = method(:run)
+  if defined? terminate
+    kill_proc = method(:terminate)
+  else
+    kill_proc = Proc.new { }
+  end
 else
   run_proc = RSched::ExecRunner.new(conf[:exec])
+  kill_proc = run_proc.method(:terminate)
 end
 
-worker.run(run_proc)
+worker.init_proc(run_proc, kill_proc)
+worker.run
 

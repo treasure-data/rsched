@@ -63,7 +63,7 @@ class DBLockTest < Test::Unit::TestCase
     assert_not_equal nil, token
     assert_not_equal false, token
 
-    db1.release(token)
+    db1.release(token, now-1)
 
     # released
     token = db2.acquire('ident1', time, now)
@@ -135,17 +135,19 @@ class DBLockTest < Test::Unit::TestCase
     assert_not_equal nil, token
     assert_not_equal false, token
 
-    # same host can relock
-    # + extend timeout
-    token = db1.acquire('ident1', time, now+TIMEOUT)
-    assert_not_equal nil, token
-    assert_not_equal false, token
+    # different host can't extend (even if same token)
+    ok = db2.extend_timeout(token, now+TIMEOUT*2)
+    assert_equal false, ok
 
-    # timeout is extended
+    # same host can extend timeout
+    ok = db1.extend_timeout(token, now+TIMEOUT*2)
+    assert_equal true, ok
+
+    # timeout is extended; different host can't lock
     token_ = db2.acquire('ident1', time, now+TIMEOUT+1)
     assert_equal false, token_
 
-    # extended timeout is expired
+    # extended timeout is expired; different host can lock
     token = db2.acquire('ident1', time, now+TIMEOUT*2+1)
     assert_not_equal nil, token
     assert_not_equal false, token
