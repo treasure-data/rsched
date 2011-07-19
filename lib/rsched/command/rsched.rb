@@ -243,7 +243,17 @@ if conf[:daemon]
 end
 
 
-lock = RSched::DBLock.new(conf[:name], conf[:timeout], dbi, conf[:db_user].to_s, conf[:db_password].to_s)
+begin
+  lock = RSched::DBLock.new(conf[:name], conf[:timeout], dbi, conf[:db_user].to_s, conf[:db_password].to_s)
+rescue DBI::InterfaceError
+  STDERR.puts "Can't initialize DBI interface: #{$!}"
+  STDERR.puts "You may have to install database driver first:"
+  STDERR.puts ""
+  STDERR.puts "  $ gem install dbd-mysql"
+  STDERR.puts "  $ gem install dbd-sqlite3"
+  STDERR.puts ""
+  exit 1
+end
 worker = RSched::Engine.new(lock, conf)
 
 schedule.each {|e|
