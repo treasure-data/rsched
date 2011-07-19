@@ -7,18 +7,31 @@ class DBLock < Lock
     super(hostname, timeout)
     require 'dbi'
     @db = DBI.connect(uri, user, pass)
-    init_db
+    init_db(uri.split(':',3)[1])
   end
 
-  def init_db
+  def init_db(type)
     sql = ''
-    sql << 'CREATE TABLE IF NOT EXISTS rsched ('
-    sql << '  ident VARCHAR(256) NOT NULL,'
-    sql << '  time INT NOT NULL,'
-    sql << '  host VARCHAR(256),'
-    sql << '  timeout INT,'
-    sql << '  finish INT,'
-    sql << '  PRIMARY KEY (ident, time));'
+    case type
+    when /mysql/i
+      sql << 'CREATE TABLE IF NOT EXISTS rsched ('
+      sql << '  ident VARCHAR(256) CHARACTER SET ASCII NOT NULL,'
+      sql << '  time INT NOT NULL,'
+      sql << '  host VARCHAR(256) CHARACTER SET ASCII,'
+      sql << '  timeout INT,'
+      sql << '  finish INT,'
+      sql << '  PRIMARY KEY (ident, time)'
+      sql << ') ENGINE=INNODB;'
+    else
+      sql << 'CREATE TABLE IF NOT EXISTS rsched ('
+      sql << '  ident VARCHAR(256) NOT NULL,'
+      sql << '  time INT NOT NULL,'
+      sql << '  host VARCHAR(256),'
+      sql << '  timeout INT,'
+      sql << '  finish INT,'
+      sql << '  PRIMARY KEY (ident, time)'
+      sql << ');'
+    end
     @db.execute(sql)
   end
 
