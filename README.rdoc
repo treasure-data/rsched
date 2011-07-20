@@ -32,6 +32,11 @@ _Example:_
   # Run every day at 00:00
   $ rsched -a 'mywork 0 0 * * * aaaa uuu ee' ...
 
+  # Use SQLite3 for the lock database
+  $ rsched -T mysql -H myhost -D mydb -u myuser -p mypassword ...
+
+  # Use MySQL for the lock database
+  $ rsched -T sqlite3 -D /path/to/db.sqlite3 ...
 
 == Usage
 

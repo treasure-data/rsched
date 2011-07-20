@@ -14,14 +14,14 @@ class Engine
       @action = action
       @sched_start = sched_start
       @queue = []
-      @last_time = from
+      @last_time = from.to_i / 60 * 60
       sched(to)
     end
 
     attr_reader :queue, :action
 
-    def sched(now)
-      while @last_time <= now
+    def sched(sched_time)
+      while @last_time <= sched_time
         t = Time.at(@last_time).utc
         if @tab.is_specification_in_effect?(t)
           time = create_time_key(t)
@@ -68,7 +68,7 @@ class Engine
   # {cron => (ident,action)}
   def set_sched(ident, action, cron)
     now = Time.now.to_i
-    @ss[ident] = Sched.new(cron, action, @sched_start, now-@resume, now-@delay)
+    @ss[ident] = Sched.new(cron, action, @sched_start, now-@delay-@resume, now-@delay)
   end
 
   def init_proc(run_proc, kill_proc)
@@ -81,10 +81,10 @@ class Engine
     until @finished
       one = false
 
-      now = Time.now.to_i - @delay
+      sched_time = Time.now.to_i - @delay
       @ss.each_pair {|ident,s|
 
-        s.sched(now)
+        s.sched(sched_time)
         s.queue.delete_if {|time|
           next if @finished
 

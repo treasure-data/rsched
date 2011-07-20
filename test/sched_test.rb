@@ -39,7 +39,7 @@ class SchedTest < Test::Unit::TestCase
     assert_equal [now, now+HOUR, now+HOUR*3], sched.queue
   end
 
-  it 'sched hours' do
+  it 'sched days' do
     now = Time.parse("2010-02-02 00:00:00 UTC").to_i
     sched_start = now
 

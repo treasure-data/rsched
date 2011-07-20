@@ -14,7 +14,7 @@ class Lock
   def acquire(ident, time, now=Time.now.to_i)
   end
 
-  def release(token, next_timeout=Time.now.to_i)
+  def release(token)
   end
 
   def finish(token, now=Time.now.to_i)
