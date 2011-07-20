@@ -1,4 +1,11 @@
 
+== 2011-07-20 version 0.3.1
+
+* Run task exactly at XX:XX:00
+* Use InnoDB on MySQL
+* Show kind message when DBI driver is not found
+
+
 == 2011-07-19 version 0.3.0
 
 * Changed not to release a lock when a task is failed
