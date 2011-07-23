@@ -1,4 +1,10 @@
 
+== 2011-07-23 version 0.3.2
+
+* Added --env K=V option
+* Accepts multiple -f, --file option
+
+
 == 2011-07-20 version 0.3.1
 
 * Run task exactly at XX:XX:00
