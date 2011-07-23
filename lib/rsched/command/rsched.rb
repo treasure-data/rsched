@@ -143,6 +143,7 @@ begin
   end
 
   if conf[:files]
+    require 'yaml'
     docs = ''
     conf[:files].each {|file|
       docs << File.read(file)
