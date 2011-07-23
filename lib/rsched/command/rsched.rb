@@ -15,7 +15,7 @@ defaults = {
   :delay => 0,
   :interval => 10,
   :type => 'mysql',
-  :name => "#{Process.pid}.#{`hostname`.strip}",
+  :node_name => "#{Process.pid}.#{`hostname`.strip}",
   :kill_retry => 60,
   :release_on_fail => false,
 }
@@ -51,7 +51,7 @@ op.on('-E', '--delete SEC', 'Limit time to delete tasks (default: 2592000)', Int
 }
 
 op.on('-n', '--name NAME', 'Unique name of this node (default: PID.HOSTNAME)') {|s|
-  conf[:name] = s
+  conf[:node_name] = s
 }
 
 op.on('-w', '--delay SEC', 'Delay time before running a task (default: 0)', Integer) {|i|
@@ -82,12 +82,12 @@ op.on('-i', '--interval SEC', 'Scheduling interval (default: 10)', Integer) {|i|
   conf[:interval] = i
 }
 
-op.on('-E', '--release-on-fail', 'Releases lock if task failed so that other node can retry immediately', TrueClass) {|b|
+op.on('-U', '--release-on-fail', 'Releases lock if task failed so that other node can retry immediately', TrueClass) {|b|
   conf[:release_on_fail] = b
 }
 
 op.on('-T', '--type TYPE', 'Lock database type (default: mysql)') {|s|
-  conf[:type] = s
+  conf[:db_type] = s
 }
 
 op.on('-D', '--database DB', 'Database name') {|s|
@@ -106,12 +106,17 @@ op.on('-p', '--password PASSWORD', 'Database password') {|s|
   conf[:db_password] = s
 }
 
+op.on('--env K=V', 'Set environment variable') {|s|
+  k, v = s.split('=',2)
+  (conf[:env] ||= {})[k] = v
+}
+
 op.on('-d', '--daemon PIDFILE', 'Daemonize (default: foreground)') {|s|
   conf[:daemon] = s
 }
 
 op.on('-f', '--file PATH.yaml', 'Read configuration file') {|s|
-  conf[:file] = s
+  (conf[:files] ||= []) << s
 }
 
 
@@ -137,11 +142,15 @@ begin
     usage nil
   end
 
-  if conf[:file]
-    require 'yaml'
-    yaml = YAML.load File.read(conf[:file])
+  if conf[:files]
+    docs = ''
+    conf[:files].each {|file|
+      docs << File.read(file)
+    }
     y = {}
-    yaml.each_pair {|k,v| y[k.to_sym] = v }
+    YAML.load_documents(docs) {|yaml|
+      yaml.each_pair {|k,v| y[k.to_sym] = v }
+    }
 
     conf = defaults.merge(y).merge(conf)
 
@@ -174,7 +183,7 @@ begin
     raise "delete time (-E) must be larger than resume time (-r)"
   end
 
-  case conf[:type]
+  case conf[:db_type]
   when 'mysql'
     if !conf[:db_database] || !conf[:db_host] || !conf[:db_user]
       raise "--database, --host and --user are required for mysql"
@@ -188,7 +197,7 @@ begin
     dbi = "DBI:SQLite3:#{conf[:db_database]}"
 
   else
-    raise "Unknown lock server type '#{conf[:type]}'"
+    raise "Unknown lock server type '#{conf[:db_type]}'"
   end
 
   unless conf[:extend_timeout]
@@ -207,7 +216,7 @@ end
 if confout
   require 'yaml'
 
-  conf.delete(:file)
+  conf.delete(:files)
   conf[:schedule] = schedule
   conf[:args] = ARGV
 
@@ -226,7 +235,7 @@ if schedule.empty?
 end
 
 
-puts "Using node name #{conf[:name]}"
+puts "Using node name #{conf[:node_name]}"
 
 
 if conf[:daemon]
@@ -244,7 +253,7 @@ end
 
 
 begin
-  lock = RSched::DBLock.new(conf[:name], conf[:timeout], dbi, conf[:db_user].to_s, conf[:db_password].to_s)
+  lock = RSched::DBLock.new(conf[:node_name], conf[:timeout], dbi, conf[:db_user].to_s, conf[:db_password].to_s)
 rescue DBI::InterfaceError
   STDERR.puts "Can't initialize DBI interface: #{$!}"
   STDERR.puts "You may have to install database driver first:"

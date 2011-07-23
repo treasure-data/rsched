@@ -56,6 +56,7 @@ class Engine
     @kill_retry = conf[:kill_retry]
     @sched_start = conf[:from] || 0
     @release_on_fail = conf[:release_on_fail]
+    @env = conf[:env] || {}
     @finished = false
     @ss = {}
 
@@ -145,6 +146,10 @@ class Engine
 
   def process(token, ident, time, action)
     puts "started token=#{token.inspect} time=#{time}"
+
+    @env.each_pair {|k,v|
+      ENV[k] = v
+    }
 
     @extender.set_token(token)
 

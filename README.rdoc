@@ -45,18 +45,23 @@ _Example:_
           --exec COMMAND               Execute command
           --run SCRIPT.rb              Run method named 'run' defined in the script
       -a, --add EXPR                   Add an execution schedule
-      -t, --timeout SEC                Retry timeout (default: 600)
+      -t, --timeout SEC                Retry timeout (default: 30)
       -r, --resume SEC                 Limit time to resume tasks (default: 3600)
       -E, --delete SEC                 Limit time to delete tasks (default: 2592000)
       -n, --name NAME                  Unique name of this node (default: PID.HOSTNAME)
       -w, --delay SEC                  Delay time before running a task (default: 0)
-      -F, --from UNIX_TIME_OR_now      Time to start scheduling
+      -F, --from YYYY-mm-dd_OR_now     Time to start scheduling
+      -e, --extend-timeout SEC         Threashold time before extending visibility timeout (default: timeout * 3/4)
+      -x, --kill-timeout SEC           Threashold time before killing process (default: timeout * 10)
+      -X, --kill-retry SEC             Threashold time before retrying killing process (default: 60)
       -i, --interval SEC               Scheduling interval (default: 10)
+      -U, --release-on-fail            Releases lock if task failed so that other node can retry immediately
       -T, --type TYPE                  Lock database type (default: mysql)
       -D, --database DB                Database name
       -H, --host HOST[:PORT]           Database host
       -u, --user NAME                  Database user name
       -p, --password PASSWORD          Database password
+          --env K=V                    Set environment variable
       -d, --daemon PIDFILE             Daemonize (default: foreground)
       -f, --file PATH.yaml             Read configuration file
 
