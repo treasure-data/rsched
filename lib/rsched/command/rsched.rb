@@ -1,15 +1,17 @@
 require 'optparse'
 require 'rsched/engine'
+require 'rsched/version'
 
 op = OptionParser.new
 
 op.banner += " [-- <ARGV-for-exec-or-run>]"
+op.version = RSched::VERSION
 
 confout = nil
 schedule = []
 
 defaults = {
-  :timeout => 30,
+  :timeout => 300,
   :resume => 3600,
   :delete => 2592000,
   :delay => 0,
