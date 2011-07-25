@@ -1,4 +1,10 @@
 
+== 2011-07-26 version 0.3.3
+
+* Fixed timeout extension
+* Supports --version option
+
+
 == 2011-07-23 version 0.3.2
 
 * Added --env K=V option
