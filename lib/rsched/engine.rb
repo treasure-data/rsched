@@ -180,7 +180,7 @@ class Engine
   end
 
   def cleanup_old_entries(ident)
-    @lock.delete_before(ident, Time.now.to_i-@delete)
+    @lock.delete_before(ident, Time.now.to_i-@delete-@delay)
   end
 
   class TimerThread
@@ -247,7 +247,7 @@ class Engine
     def try_extend(now, token)
       if now > @extend_time
         puts "extending token=#{token.inspect}"
-        @lock.extend_timeout(token, now)
+        @lock.extend_timeout(token)
         @extend_time = now + @extend_timeout
       end
     end
