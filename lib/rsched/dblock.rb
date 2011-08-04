@@ -6,8 +6,19 @@ class DBLock < Lock
   def initialize(hostname, timeout, uri, user, pass)
     super(hostname, timeout)
     require 'dbi'
-    @db = DBI.connect(uri, user, pass)
+    @uri = uri
+    @user = user
+    @pass = pass
     init_db(uri.split(':',3)[1])
+  end
+
+  private
+  def connect!
+    if @conn
+      @conn.close
+      @conn = nil
+    end
+    @conn = DBI.connect(@uri, @user, @pass)
   end
 
   def init_db(type)
@@ -32,9 +43,11 @@ class DBLock < Lock
       sql << '  PRIMARY KEY (ident, time)'
       sql << ');'
     end
-    @db.execute(sql)
+    connect!
+    @conn.execute(sql)
   end
 
+  public
   def acquire(ident, time, now=Time.now.to_i)
     if try_insert(ident, time, now) || try_update(ident, time, now)
       return [ident, time]
@@ -47,32 +60,32 @@ class DBLock < Lock
 
   def release(token)
     ident, time = *token
-    n = @db.do('UPDATE rsched SET timeout=? WHERE ident = ? AND time = ? AND host = ?;',
+    n = @conn.do('UPDATE rsched SET timeout=? WHERE ident = ? AND time = ? AND host = ?;',
            0, ident, time, @hostname)
     return n > 0
   end
 
   def finish(token, now=Time.now.to_i)
     ident, time = *token
-    n = @db.do('UPDATE rsched SET finish=? WHERE ident = ? AND time = ? AND host = ?;',
+    n = @conn.do('UPDATE rsched SET finish=? WHERE ident = ? AND time = ? AND host = ?;',
            now, ident, time, @hostname)
     return n > 0
   end
 
   def extend_timeout(token, timeout=Time.now.to_i+@timeout)
     ident, time = *token
-    n = @db.do('UPDATE rsched SET timeout=? WHERE ident = ? AND time = ? AND host = ?;',
+    n = @conn.do('UPDATE rsched SET timeout=? WHERE ident = ? AND time = ? AND host = ?;',
            timeout, ident, time, @hostname)
     return n > 0
   end
 
   def delete_before(ident, time)
-    @db.do('DELETE FROM rsched WHERE ident = ? AND time < ? AND finish IS NOT NULL;', ident, time)
+    @conn.do('DELETE FROM rsched WHERE ident = ? AND time < ? AND finish IS NOT NULL;', ident, time)
   end
 
   private
   def try_insert(ident, time, now)
-    n = @db.do('INSERT INTO rsched (ident, time, host, timeout) VALUES (?, ?, ?, ?);',
+    n = @conn.do('INSERT INTO rsched (ident, time, host, timeout) VALUES (?, ?, ?, ?);',
            ident, time, @hostname, now+@timeout)
     return n > 0
   rescue # TODO unique error
@@ -80,13 +93,13 @@ class DBLock < Lock
   end
 
   def try_update(ident, time, now)
-    n = @db.do('UPDATE rsched SET host=?, timeout=? WHERE ident = ? AND time = ? AND finish IS NULL AND timeout < ?;',
+    n = @conn.do('UPDATE rsched SET host=?, timeout=? WHERE ident = ? AND time = ? AND finish IS NULL AND timeout < ?;',
             @hostname, now+@timeout, ident, time, now)
     return n > 0
   end
 
   def check_finished(ident, time)
-    x = @db.select_one('SELECT finish FROM rsched WHERE ident = ? AND time = ? AND finish IS NOT NULL;',
+    x = @conn.select_one('SELECT finish FROM rsched WHERE ident = ? AND time = ? AND finish IS NOT NULL;',
                 ident, time)
     return x != nil
   end
