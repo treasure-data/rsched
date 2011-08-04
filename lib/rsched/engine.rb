@@ -145,7 +145,7 @@ class Engine
   end
 
   def process(token, ident, time, action)
-    puts "started token=#{token.inspect} time=#{time}"
+    $log.info "started token=#{token.inspect} time=#{time}"
 
     @env.each_pair {|k,v|
       ENV[k] = v
@@ -156,12 +156,12 @@ class Engine
     success = false
     begin
       @run_proc.call(ident, time, action)
-      puts "finished token=#{token.inspect}"
+      $log.info "finished token=#{token.inspect}"
       success = true
     rescue
-      puts "failed token=#{token.inspect} time=#{time}: #{$!}"
+      $log.error "failed token=#{token.inspect} time=#{time}: #{$!}"
       $!.backtrace.each {|bt|
-        puts "  #{bt}"
+        $log.error "  #{bt}"
       }
     end
 
@@ -246,7 +246,7 @@ class Engine
 
     def try_extend(now, token)
       if now > @extend_time
-        puts "extending token=#{token.inspect}"
+        $log.debug "extending token=#{token.inspect}"
         @lock.extend_timeout(token)
         @extend_time = now + @extend_timeout
       end
@@ -255,7 +255,7 @@ class Engine
     def try_kill(now, token)
       if now > @kill_time
         if @kill_proc
-          puts "killing #{token.inspect}..."
+          $log.info "killing #{token.inspect}..."
           @kill_proc.call rescue nil
         end
         @kill_time = now + @kill_retry
